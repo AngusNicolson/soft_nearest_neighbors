@@ -6,7 +6,7 @@ from soft_nearest_neighbors.loss import SoftNearestNeighbours
 
 def training_loop(model, optimizer, n=20, tol=1e-4):
     losses = []
-    converged = False
+    flags = {"converged": False, "increased": False, "finished": False}
     temps = [model.weights.detach().cpu().numpy()[0]]
     for i in range(n):
         loss = model()
@@ -18,13 +18,18 @@ def training_loop(model, optimizer, n=20, tol=1e-4):
         temps.append(model.weights.detach().cpu().numpy()[0])
         del loss
         if not is_converging(losses):
+            flags["increased"] = True
             print("Loss increased! Use a smaller lr.")
             break
         elif np.allclose(losses[-1], losses[-5:], rtol=0, atol=tol) and len(losses) > 5:
-            print(f"Loss converged to {losses[-1]:.4f} in {i+1} iterations")
-            converged = True
+            print(f"Loss converged to {losses[-1]:.4f} in {i+1} iterations with T {temps[-2]:.3f}")
+            flags["converged"] = True
             break
-    return losses, temps, converged
+        elif i == n - 1:
+            flags["finished"] = True
+            print(f"Loss failed to converge with {n} iterations. Try using a higher lr.")
+
+    return losses, temps, flags
 
 
 def is_converging(losses, horizon=5):

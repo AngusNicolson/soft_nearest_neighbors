@@ -10,7 +10,7 @@ from soft_nearest_neighbors.optim import get_loss
 def test_get_loss_runs():
     x, y = make_data(50, [0, 2], [0, 0], 0.5)
     t0 = time()
-    losses, temps, converged = get_loss(x, y, 0.1, 100)
+    losses, temps, flags = get_loss(x, y, 0.1, 100)
     t1 = time()
 
     print(f"Time: {t1 - t0:.2f} s")
