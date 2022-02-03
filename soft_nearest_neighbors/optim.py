@@ -6,6 +6,7 @@ from soft_nearest_neighbors.loss import SoftNearestNeighbours
 
 def training_loop(model, optimizer, n=20):
     losses = []
+    converged = False
     temps = [model.weights.detach().cpu().numpy()[0]]
     for i in range(n):
         loss = model()
@@ -16,13 +17,33 @@ def training_loop(model, optimizer, n=20):
         losses.append(loss.detach().cpu().numpy())
         temps.append(model.weights.detach().cpu().numpy()[0])
         del loss
+        if not is_converging(losses):
+            print("Loss increased! Use a smaller lr.")
+            break
+        elif (np.isclose(losses[-1], losses[-5:])).all() and len(losses) > 5:
+            print(f"Loss converged to {losses[-1]:.4f} in {i+1} iterations")
+            converged = True
+            break
+    return losses, temps, converged
 
-    return losses, temps
+
+def is_converging(losses, horizon=5):
+    """Check if the loss is reducing."""
+    if len(losses) < horizon:
+        return True
+    else:
+        losses = np.array(losses[:5])
+        running_mean = np.convolve(losses, np.ones(2)/2, mode="valid")
+        deltas = losses[1:] - running_mean
+        if (deltas <= 0).all():
+            return True
+        else:
+            return False
 
 
 def get_loss(x, y, lr=0.1, n=20, init_t=0.1, use_gpu=False):
     device = get_device(use_gpu)
-    model = SoftNearestNeighbours(x.to(device), y.to(device), temperature_init=init_t)
+    model = SoftNearestNeighbours(x.to(device), y.to(device), temperature_init=init_t, raise_on_inf=True)
     model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
     return training_loop(model, optimizer, n)
