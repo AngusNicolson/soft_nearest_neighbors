@@ -1,4 +1,4 @@
-
+import numpy as np
 import torch
 
 from soft_nearest_neighbors.loss import SoftNearestNeighbours
@@ -25,6 +25,22 @@ def get_loss(x, y, lr=0.1, n=20, init_t=0.1, use_gpu=False):
     model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
     return training_loop(model, optimizer, n)
+
+
+def grid_search(x, y, min_v, max_v, n, use_gpu=False):
+    """Grid search across T to find optimal starting temperature."""
+    temps = np.linspace(min_v, max_v, n)
+    device = get_device(use_gpu)
+    x = x.to(device)
+    y = y.to(device)
+    losses = []
+    for t in temps:
+        model = SoftNearestNeighbours(x, y, temperature_init=t)
+        model.to(device)
+        with torch.no_grad():
+            loss = model()
+        losses.append(loss.cpu().numpy())
+    return temps[np.argmin(losses)]
 
 
 def get_device(use_gpu=False):
