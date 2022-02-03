@@ -4,7 +4,7 @@ import torch
 from soft_nearest_neighbors.loss import SoftNearestNeighbours
 
 
-def training_loop(model, optimizer, n=20):
+def training_loop(model, optimizer, n=20, tol=1e-4):
     losses = []
     converged = False
     temps = [model.weights.detach().cpu().numpy()[0]]
@@ -20,7 +20,7 @@ def training_loop(model, optimizer, n=20):
         if not is_converging(losses):
             print("Loss increased! Use a smaller lr.")
             break
-        elif (np.isclose(losses[-1], losses[-5:])).all() and len(losses) > 5:
+        elif np.allclose(losses[-1], losses[-5:], rtol=0, atol=tol) and len(losses) > 5:
             print(f"Loss converged to {losses[-1]:.4f} in {i+1} iterations")
             converged = True
             break
@@ -41,12 +41,12 @@ def is_converging(losses, horizon=5):
             return False
 
 
-def get_loss(x, y, lr=0.1, n=20, init_t=0.1, use_gpu=False):
+def get_loss(x, y, lr=0.1, n=20, init_t=0.1, use_gpu=False, tol=1e-4):
     device = get_device(use_gpu)
     model = SoftNearestNeighbours(x.to(device), y.to(device), temperature_init=init_t, raise_on_inf=True)
     model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    return training_loop(model, optimizer, n)
+    return training_loop(model, optimizer, n, tol=tol)
 
 
 def grid_search(x, y, min_v, max_v, n, use_gpu=False):
