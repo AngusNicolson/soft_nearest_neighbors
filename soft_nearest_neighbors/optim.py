@@ -11,6 +11,7 @@ def training_loop(model, optimizer, n=20):
         loss = model()
         loss.backward()
         optimizer.step()
+        model.weights.data = model.weights.data.clamp(min=1e-5)
         optimizer.zero_grad()
         losses.append(loss.detach().cpu().numpy())
         temps.append(model.weights.detach().cpu().numpy()[0])
