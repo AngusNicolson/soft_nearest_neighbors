@@ -3,7 +3,7 @@ import torch
 
 
 class SoftNearestNeighbours(torch.nn.Module):
-    def __init__(self, x, y, temperature_init: float = 0.1, eps: float = 1e-8):
+    def __init__(self, x, y, temperature_init: float = 0.1, eps: float = 1e-8, raise_on_inf=False):
         super(SoftNearestNeighbours, self).__init__()
         weights = torch.zeros(1) + 1/temperature_init
         self.weights = torch.nn.Parameter(weights)
@@ -12,6 +12,7 @@ class SoftNearestNeighbours(torch.nn.Module):
         self.n = self.x.shape[0]
         self.distances = torch.cdist(x, x, p=2)
         self.eps = eps
+        self.raise_on_inf = raise_on_inf
 
     def get_bool_mask(self, idx, class_subset=False):
         if class_subset:
@@ -30,5 +31,7 @@ class SoftNearestNeighbours(torch.nn.Module):
             fracs[i] = torch.log(top.sum()/(bot.sum() + self.eps))
             if fracs[i].isnan().item():
                 raise ValueError("Nan detected in loss calculation")
+            elif fracs[i].isinf().item() and self.raise_on_inf:
+                raise ValueError("inf detected in loss calculation, if optimising try reducing the lr")
         loss = (-1 / self.n) * fracs.sum()
         return loss
