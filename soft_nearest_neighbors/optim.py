@@ -62,7 +62,8 @@ def grid_search(x, y, min_v, max_v, n, use_gpu=False):
         with torch.no_grad():
             loss = model()
         losses.append(loss.cpu().numpy())
-    return temps[np.argmin(losses)]
+    min_idx = np.argmin(losses)
+    return losses[min_idx], temps[min_idx]
 
 
 def get_device(use_gpu=False):
