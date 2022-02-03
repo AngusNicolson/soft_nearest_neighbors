@@ -71,11 +71,13 @@ def grid_search(x, y, min_v, max_v, n, use_gpu=False):
     return losses[min_idx], temps[min_idx]
 
 
-def get_device(use_gpu=False):
+def get_device(use_gpu=False, log=False):
     if torch.cuda.is_available() and use_gpu:
         device = torch.device("cuda")
-        print("Using {} device: {}".format(device, torch.cuda.current_device()))
+        if log:
+            print("Using {} device: {}".format(device, torch.cuda.current_device()))
     else:
         device = torch.device("cpu")
-        print("Using {}".format(device))
+        if log:
+            print("Using {}".format(device))
     return device
