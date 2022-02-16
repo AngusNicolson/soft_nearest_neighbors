@@ -19,7 +19,7 @@ class SoftNearestNeighbours(torch.nn.Module):
         if class_subset:
             mask = self.y == self.y[idx]
         else:
-            mask = torch.ones(self.n, dtype=torch.bool)
+            mask = torch.ones(self.n, dtype=bool)
         mask[idx] = False
         return mask
 
