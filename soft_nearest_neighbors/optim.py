@@ -46,6 +46,24 @@ def is_converging(losses, horizon=5):
             return False
 
 
+def grid_searches(x, y, lows, highs, ns=20, use_gpu=False):
+    """Run multiple grid searches to find the optimal starting temperature"""
+    if len(lows) != len(highs):
+        raise ValueError("Must provide same number same number of low and high values")
+    if type(ns) == int:
+        ns = [n for n in range(len(lows))]
+    losses = []
+    temps = []
+    for low, high, n in zip(lows, highs, ns):
+        grid_loss, init_t = grid_search(x, y, low, high, n, use_gpu=use_gpu)
+        losses.append(grid_loss)
+        temps.append(init_t)
+
+    minimum_idx = np.argmin(losses)
+    print(f"Grid search complete. Initial values: T: {temps[minimum_idx]:.2f}, Loss: {losses[minimum_idx]:.4f}.")
+    return temps[minimum_idx], losses[minimum_idx]
+
+
 def get_loss(x, y, lr=0.1, n=20, init_t=0.1, use_gpu=False, tol=1e-4):
     device = get_device(use_gpu)
     model = SoftNearestNeighbours(x.to(device), y.to(device), temperature_init=init_t, raise_on_inf=True)

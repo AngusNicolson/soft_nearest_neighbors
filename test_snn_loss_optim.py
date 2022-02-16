@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from time import time
 import numpy as np
 
-from soft_nearest_neighbors.optim import get_loss
+from soft_nearest_neighbors.optim import get_loss, grid_searches
 
 
 def test_get_loss_runs():
@@ -26,6 +26,14 @@ def test_get_loss_runs():
     plt.show()
 
     assert not np.isnan(losses).any()
+
+
+def test_optimised_loss_better_than_gridsearch():
+    x, y = make_data(50, [0, 2], [0, 0], 0.5)
+    init_loss, init_t = grid_searches(x, y, [0.05, 1], [1, 50], [20, 10])
+    losses, temps, flags = get_loss(x, y, 0.1, 100, init_t=init_t)
+    assert losses[-1] < init_loss
+
 
 
 def make_data(n, x_means, y_means, std):
