@@ -7,8 +7,9 @@ from soft_nearest_neighbors.loss import SoftNearestNeighbours
 def training_loop(model, optimizer, n=20, tol=1e-4):
     losses = []
     flags = {"converged": False, "increased": False, "finished": False}
-    temps = [model.weights.detach().cpu().numpy()[0]]
+    temps = []
     for i in range(n):
+        temps.append(model.weights.detach().cpu().numpy()[0])
         loss = model()
         loss.backward()
         optimizer.step()
@@ -22,7 +23,7 @@ def training_loop(model, optimizer, n=20, tol=1e-4):
             print("Loss increased! Use a smaller lr.")
             break
         elif np.allclose(losses[-1], losses[-5:], rtol=0, atol=tol) and len(losses) > 5:
-            print(f"Loss converged to {losses[-1]:.4f} in {i+1} iterations with T {temps[-2]:.3f}")
+            print(f"Loss converged to {losses[-1]:.4f} in {i+1} iterations with T {temps[-1]:.3f}")
             flags["converged"] = True
             break
         elif i == n - 1:
