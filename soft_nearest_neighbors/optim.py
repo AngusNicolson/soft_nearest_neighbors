@@ -9,7 +9,7 @@ def training_loop(model, optimizer, n=20, tol=1e-4):
     flags = {"converged": False, "increased": False, "finished": False}
     temps = []
     for i in range(n):
-        temps.append(model.weights.detach().cpu().numpy()[0])
+        temps.append(1/model.weights.detach().cpu().numpy()[0])
         loss = model()
         loss.backward()
         optimizer.step()
