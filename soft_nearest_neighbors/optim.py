@@ -12,12 +12,8 @@ def training_loop(model, optimizer, n=20, tol=1e-4, min_iter=6):
     temps = []
     for i in range(n):
         temps.append(1/model.weights.detach().cpu().numpy()[0])
-        if temps[-1] > 1000:
-            print("That's hot!")
         loss = model()
         loss.backward()
-        if model.weights.grad.isnan().item():
-            print("Uhoh!")
         optimizer.step()
         model.weights.data = model.weights.data.clamp(min=1e-5)
         optimizer.zero_grad()
