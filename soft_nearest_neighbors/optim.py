@@ -4,7 +4,9 @@ import torch
 from soft_nearest_neighbors.loss import SoftNearestNeighbours
 
 
-def training_loop(model, optimizer, n=20, tol=1e-4):
+def training_loop(model, optimizer, n=20, tol=1e-4, min_iter=6):
+    if min_iter <= 2:
+        raise ValueError("Minimum no. iterations must be greater than 2")
     losses = []
     flags = {"converged": False, "increased": False, "finished": False}
     temps = []
@@ -21,11 +23,11 @@ def training_loop(model, optimizer, n=20, tol=1e-4):
         optimizer.zero_grad()
         losses.append(loss.detach().cpu().numpy())
         del loss
-        if np.allclose(losses[-1], losses[-5:], rtol=0, atol=tol) and len(losses) > 5:
+        if np.allclose(losses[-1], losses[-min_iter:], rtol=0, atol=tol) and len(losses) >= min_iter:
             print(f"Loss converged to {losses[-1]:.4f} in {i+1} iterations with T {temps[-1]:.3f}")
             flags["converged"] = True
             break
-        elif not is_converging(losses):
+        elif not is_converging(losses, horizon=min_iter):
             flags["increased"] = True
             print("Loss increased! Use a smaller lr.")
             break
@@ -41,7 +43,7 @@ def is_converging(losses, horizon=5):
     if len(losses) <= horizon:
         return True
     else:
-        losses = np.array(losses[:5])
+        losses = np.array(losses[:horizon])
         running_mean = np.convolve(losses, np.ones(2)/2, mode="valid")
         deltas = losses[1:] - running_mean
         if (deltas <= 0).all():
@@ -68,12 +70,12 @@ def grid_searches(x, y, lows, highs, ns=20, use_gpu=False):
     return temps[minimum_idx], losses[minimum_idx]
 
 
-def get_loss(x, y, lr=0.1, n=20, init_t=0.1, use_gpu=False, tol=1e-4):
+def get_loss(x, y, lr=0.1, n=20, init_t=0.1, use_gpu=False, tol=1e-4, min_iter=6):
     device = get_device(use_gpu)
     model = SoftNearestNeighbours(x.to(device), y.to(device), temperature_init=init_t, raise_on_inf=True)
     model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    return training_loop(model, optimizer, n, tol=tol)
+    return training_loop(model, optimizer, n, tol=tol, min_iter=min_iter)
 
 
 def grid_search(x, y, min_v, max_v, n, use_gpu=False):
