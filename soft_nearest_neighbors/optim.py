@@ -101,3 +101,37 @@ def get_device(use_gpu=False, log=False):
         if log:
             print("Using {}".format(device))
     return device
+
+
+def find_working_lr(x, y, lr=0.1, n=100, init_t=0.5, use_gpu=False, tol=1e-4, min_iter=6):
+    done = False
+    losses, temps, flags = [], [], {}
+    for i in range(5):
+        try:
+            losses, temps, flags = get_loss(
+                x,
+                y,
+                lr=lr,
+                n=n,
+                init_t=init_t,
+                use_gpu=use_gpu,
+                tol=tol,
+                min_iter=min_iter
+            )
+            if flags["converged"]:
+                done = True
+                break
+            else:
+                if flags["increased"]:
+                    print(f"lr {lr:.5f} did not converge, trying {lr * 0.1:.5f}...")
+                    lr *= 0.1
+                elif flags["finished"]:
+                    print(f"lr {lr:.5f} did not converge, trying {lr * 5:.5f}...")
+                    lr *= 5
+
+        except ValueError:
+            print(f"lr {lr:.5f} failed, trying {lr * 0.1:.5f}...")
+            lr *= 0.1
+
+    flags["done"] = done
+    return losses, temps, flags
