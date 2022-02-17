@@ -16,7 +16,6 @@ def training_loop(model, optimizer, n=20, tol=1e-4):
         model.weights.data = model.weights.data.clamp(min=1e-5)
         optimizer.zero_grad()
         losses.append(loss.detach().cpu().numpy())
-        temps.append(model.weights.detach().cpu().numpy()[0])
         del loss
         if not is_converging(losses):
             flags["increased"] = True
