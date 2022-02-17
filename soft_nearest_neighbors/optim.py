@@ -29,11 +29,11 @@ def training_loop(model, optimizer, n=20, tol=1e-4, min_iter=6):
             break
         elif not is_converging(losses, horizon=min_iter):
             flags["increased"] = True
-            print("Loss increased! Use a smaller lr.")
+            print(f"Loss increased! {losses[-1]:.4f} in {i+1} iterations with T {temps[-1]:.3f}. Use a smaller lr.")
             break
         elif i == n - 1:
             flags["finished"] = True
-            print(f"Loss failed to converge with {n} iterations. Try using a higher lr.")
+            print(f"Loss failed to converge with {n} iterations.  Try using a higher lr. Final values: {losses[-1]:.4f}, T {temps[-1]:.3f}")
 
     return losses, temps, flags
 
