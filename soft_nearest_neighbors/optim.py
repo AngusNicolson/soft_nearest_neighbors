@@ -10,20 +10,24 @@ def training_loop(model, optimizer, n=20, tol=1e-4):
     temps = []
     for i in range(n):
         temps.append(1/model.weights.detach().cpu().numpy()[0])
+        if temps[-1] > 1000:
+            print("That's hot!")
         loss = model()
         loss.backward()
+        if model.weights.grad.isnan().item():
+            print("Uhoh!")
         optimizer.step()
         model.weights.data = model.weights.data.clamp(min=1e-5)
         optimizer.zero_grad()
         losses.append(loss.detach().cpu().numpy())
         del loss
-        if not is_converging(losses):
-            flags["increased"] = True
-            print("Loss increased! Use a smaller lr.")
-            break
-        elif np.allclose(losses[-1], losses[-5:], rtol=0, atol=tol) and len(losses) > 5:
+        if np.allclose(losses[-1], losses[-5:], rtol=0, atol=tol) and len(losses) > 5:
             print(f"Loss converged to {losses[-1]:.4f} in {i+1} iterations with T {temps[-1]:.3f}")
             flags["converged"] = True
+            break
+        elif not is_converging(losses):
+            flags["increased"] = True
+            print("Loss increased! Use a smaller lr.")
             break
         elif i == n - 1:
             flags["finished"] = True
@@ -34,7 +38,7 @@ def training_loop(model, optimizer, n=20, tol=1e-4):
 
 def is_converging(losses, horizon=5):
     """Check if the loss is reducing."""
-    if len(losses) < horizon:
+    if len(losses) <= horizon:
         return True
     else:
         losses = np.array(losses[:5])
