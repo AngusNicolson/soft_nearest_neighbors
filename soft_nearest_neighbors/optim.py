@@ -57,7 +57,7 @@ def grid_searches(x, y, lows, highs, ns=20, use_gpu=False):
     losses = []
     temps = []
     for low, high, n in zip(lows, highs, ns):
-        grid_loss, init_t = grid_search(x, y, low, high, n, use_gpu=use_gpu)
+        init_t, grid_loss = grid_search(x, y, low, high, n, use_gpu=use_gpu)
         losses.append(grid_loss)
         temps.append(init_t)
 
@@ -88,7 +88,7 @@ def grid_search(x, y, min_v, max_v, n, use_gpu=False):
             loss = model()
         losses.append(loss.cpu().numpy())
     min_idx = np.argmin(losses)
-    return losses[min_idx], temps[min_idx]
+    return temps[min_idx], losses[min_idx]
 
 
 def get_device(use_gpu=False, log=False):
