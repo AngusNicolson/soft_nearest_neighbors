@@ -30,7 +30,7 @@ class SoftNearestNeighbours(torch.nn.Module):
         for i in range(self.n):
             top = exponents[i, self.get_bool_mask(i, True)]
             bot = exponents[i, self.get_bool_mask(i, False)]
-            fracs[i] = torch.log(top.sum()/(bot.sum() + self.eps))
+            fracs[i] = torch.log(top.sum()) - torch.log(bot.sum())
             if len(top) == 0:
                 if self.raise_on_single_point_for_class:
                     raise ValueError("No other points with the same label in batch")

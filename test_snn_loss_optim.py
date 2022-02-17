@@ -5,12 +5,23 @@ from time import time
 import numpy as np
 
 from soft_nearest_neighbors.optim import get_loss, grid_searches
+from soft_nearest_neighbors.loss import SoftNearestNeighbours
+
+
+def test_loss_returns_same_result():
+    print()
+    torch.random.manual_seed(42)
+    x, y = make_data(50, [0, 2], [0, 0], 0.5)
+    model = SoftNearestNeighbours(x, y, temperature_init=10, raise_on_inf=True)
+    loss = model()
+    assert loss.item() == 0.6425162553787231
 
 
 def test_get_loss_runs():
+    print()
     x, y = make_data(50, [0, 2], [0, 0], 0.5)
     t0 = time()
-    losses, temps, flags = get_loss(x, y, 0.1, 100)
+    losses, temps, flags = get_loss(x, y, 0.5, 100, 1.0)
     t1 = time()
 
     print(f"Time: {t1 - t0:.2f} s")
@@ -29,11 +40,11 @@ def test_get_loss_runs():
 
 
 def test_optimised_loss_better_than_gridsearch():
+    print()
     x, y = make_data(50, [0, 2], [0, 0], 0.5)
     init_loss, init_t = grid_searches(x, y, [0.05, 1], [1, 50], [20, 10])
-    losses, temps, flags = get_loss(x, y, 0.1, 100, init_t=init_t)
+    losses, temps, flags = get_loss(x, y, 0.5, 100, init_t=init_t)
     assert losses[-1] < init_loss
-
 
 
 def make_data(n, x_means, y_means, std):
