@@ -48,7 +48,7 @@ def is_converging(losses, horizon=5):
             return False
 
 
-def grid_searches(x, y, lows, highs, ns=20, use_gpu=False):
+def grid_searches(x, y, lows, highs, ns=20, use_gpu=False, cosine=False):
     """Run multiple grid searches to find the optimal starting temperature"""
     if len(lows) != len(highs):
         raise ValueError("Must provide same number same number of low and high values")
@@ -57,7 +57,7 @@ def grid_searches(x, y, lows, highs, ns=20, use_gpu=False):
     losses = []
     temps = []
     for low, high, n in zip(lows, highs, ns):
-        init_t, grid_loss = grid_search(x, y, low, high, n, use_gpu=use_gpu)
+        init_t, grid_loss = grid_search(x, y, low, high, n, use_gpu=use_gpu, cosine=cosine)
         losses.append(grid_loss)
         temps.append(init_t)
 
@@ -66,15 +66,15 @@ def grid_searches(x, y, lows, highs, ns=20, use_gpu=False):
     return temps[minimum_idx], losses[minimum_idx]
 
 
-def get_loss(x, y, lr=0.1, n=20, init_t=0.1, use_gpu=False, tol=1e-4, min_iter=6):
+def get_loss(x, y, lr=0.1, n=20, init_t=0.1, use_gpu=False, tol=1e-4, min_iter=6, cosine=False):
     device = get_device(use_gpu)
-    model = SoftNearestNeighbours(x.to(device), y.to(device), temperature_init=init_t, raise_on_inf=True)
+    model = SoftNearestNeighbours(x.to(device), y.to(device), temperature_init=init_t, raise_on_inf=True, cosine=cosine)
     model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
     return training_loop(model, optimizer, n, tol=tol, min_iter=min_iter)
 
 
-def grid_search(x, y, min_v, max_v, n, use_gpu=False):
+def grid_search(x, y, min_v, max_v, n, use_gpu=False, cosine=False):
     """Grid search across T to find optimal starting temperature."""
     temps = np.linspace(min_v, max_v, n)
     device = get_device(use_gpu)
@@ -82,7 +82,7 @@ def grid_search(x, y, min_v, max_v, n, use_gpu=False):
     y = y.to(device)
     losses = []
     for t in temps:
-        model = SoftNearestNeighbours(x, y, temperature_init=t)
+        model = SoftNearestNeighbours(x, y, temperature_init=t, cosine=cosine)
         model.to(device)
         with torch.no_grad():
             loss = model()
@@ -103,7 +103,7 @@ def get_device(use_gpu=False, log=False):
     return device
 
 
-def find_working_lr(x, y, lr=0.1, n=100, init_t=0.5, use_gpu=False, tol=1e-4, min_iter=6):
+def find_working_lr(x, y, lr=0.1, n=100, init_t=0.5, use_gpu=False, tol=1e-4, min_iter=6, cosine=False):
     done = False
     losses, temps, flags = [], [], {}
     for i in range(5):
@@ -116,7 +116,8 @@ def find_working_lr(x, y, lr=0.1, n=100, init_t=0.5, use_gpu=False, tol=1e-4, mi
                 init_t=init_t,
                 use_gpu=use_gpu,
                 tol=tol,
-                min_iter=min_iter
+                min_iter=min_iter,
+                cosine=cosine
             )
             if flags["converged"]:
                 done = True
@@ -129,8 +130,8 @@ def find_working_lr(x, y, lr=0.1, n=100, init_t=0.5, use_gpu=False, tol=1e-4, mi
                     print(f"lr {lr:.5f} did not converge, trying {lr * 5:.5f}...")
                     lr *= 5
 
-        except ValueError:
-            print(f"lr {lr:.5f} failed, trying {lr * 0.1:.5f}...")
+        except ValueError as e:
+            print(f"lr {lr:.5f} failed ({str(e)}), trying {lr * 0.1:.5f}...")
             lr *= 0.1
 
     flags["done"] = done

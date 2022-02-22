@@ -3,17 +3,27 @@ import torch
 
 
 class SoftNearestNeighbours(torch.nn.Module):
-    def __init__(self, x, y, temperature_init: float = 0.1, eps: float = 1e-8, raise_on_inf=False, raise_on_single_point_for_class=False):
+    def __init__(self, x, y, temperature_init: float = 0.1, eps: float = 1e-8, raise_on_inf=False, raise_on_single_point_for_class=False, cosine=False):
         super(SoftNearestNeighbours, self).__init__()
         weights = torch.zeros(1) + 1/temperature_init
         self.weights = torch.nn.Parameter(weights)
         self.x = x
         self.y = y
         self.n = self.x.shape[0]
-        self.distances = torch.cdist(x, x, p=2)
+        if cosine:
+            self.distances = self.pairwise_cosine_similarity(x)
+        else:
+            self.distances = torch.cdist(x, x, p=2)
         self.eps = eps
         self.raise_on_inf = raise_on_inf
         self.raise_on_single_point_for_class = raise_on_single_point_for_class
+
+    @staticmethod
+    def pairwise_cosine_similarity(x):
+        dots = x @ x.T
+        inv_magnitude = torch.sqrt(1 / dots.diag())
+        cosines = (dots * inv_magnitude).T * inv_magnitude
+        return cosines
 
     def get_bool_mask(self, idx, class_subset=False):
         if class_subset:
